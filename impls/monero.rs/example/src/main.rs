@@ -36,7 +36,7 @@ fn main() -> Result<(), WalletError> {
     };
 
     // Set WalletManager's daemon address
-    manager.set_daemon_address(&config.daemon_address);
+    manager.set_daemon_address(&config.daemon_address)?;
 
     // Perform the initialization.
     wallet.init(config)?;
