@@ -5,23 +5,20 @@ use std::ptr::NonNull;
 use std::sync::Arc;
 
 pub mod bindings;
-pub use bindings::WalletStatus_Critical;
-pub use bindings::WalletStatus_Error;
-pub use bindings::WalletStatus_Ok;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NetworkType {
-    Mainnet = bindings::NetworkType_MAINNET as isize,
-    Testnet = bindings::NetworkType_TESTNET as isize,
-    Stagenet = bindings::NetworkType_STAGENET as isize,
+    Mainnet = 0,
+    Testnet = 1,
+    Stagenet = 2,
 }
 
 impl NetworkType {
     pub fn from_c_int(value: c_int) -> Option<Self> {
         match value {
-            bindings::NetworkType_MAINNET => Some(NetworkType::Mainnet),
-            bindings::NetworkType_TESTNET => Some(NetworkType::Testnet),
-            bindings::NetworkType_STAGENET => Some(NetworkType::Stagenet),
+            0 => Some(NetworkType::Mainnet),
+            1 => Some(NetworkType::Testnet),
+            2 => Some(NetworkType::Stagenet),
             _ => None,
         }
     }
@@ -146,7 +143,7 @@ impl WalletManager {
         unsafe {
             let status = bindings::MONERO_Wallet_status(wallet_ptr);
 
-            if status == bindings::WalletStatus_Ok {
+            if status == bindings::MONERO_WalletStatus_Ok {
                 Ok(())
             } else {
                 let error_ptr = bindings::MONERO_Wallet_errorString(wallet_ptr);
@@ -632,7 +629,7 @@ impl Wallet {
                 c_amount_list.as_ptr(),
                 separator_c.as_ptr(),
                 mixin_count,
-                bindings::Priority_Default,
+                bindings::MONERO_Priority_Default,
                 account_index,
                 c_preferred_inputs.as_ptr(),
                 preferred_inputs_separator.as_ptr(),
@@ -644,7 +641,7 @@ impl Wallet {
             }
 
             let tx_status = bindings::MONERO_PendingTransaction_status(tx_ptr);
-            if tx_status != bindings::PendingTransactionStatus_Ok {
+            if tx_status != bindings::MONERO_PendingTransactionStatus_Ok {
                 let err_ptr = bindings::MONERO_PendingTransaction_errorString(tx_ptr);
                 let err_msg = if err_ptr.is_null() {
                     "Unknown transaction error".to_string()
@@ -724,7 +721,7 @@ impl Wallet {
                 empty.as_ptr(),
                 empty.as_ptr(),
                 mixin_count,
-                bindings::Priority_Default,
+                bindings::MONERO_Priority_Default,
                 account_index,
                 c_preferred_inputs.as_ptr(),
                 preferred_inputs_separator.as_ptr(),
@@ -736,7 +733,7 @@ impl Wallet {
             }
 
             let tx_status = bindings::MONERO_PendingTransaction_status(tx_ptr);
-            if tx_status != bindings::PendingTransactionStatus_Ok {
+            if tx_status != bindings::MONERO_PendingTransactionStatus_Ok {
                 let err_ptr = bindings::MONERO_PendingTransaction_errorString(tx_ptr);
                 let err_msg = if err_ptr.is_null() {
                     "Unknown transaction error".to_string()

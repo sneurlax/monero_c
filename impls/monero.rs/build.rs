@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 fn main() {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-    let header_path = manifest_dir.join("../../monero_libwallet2_api_c/src/main/cpp/wallet2_api_c.h");
+    let header_path = manifest_dir.join("../../monero_libwallet2_api_c/src/main/cpp/monero_wallet2_api_c.h");
 
     let lib_search_paths = [
         manifest_dir.join("../../release"),
@@ -22,7 +22,7 @@ fn main() {
 
     println!("cargo:rerun-if-changed={}", header_path.display());
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rustc-link-lib=dylib=monero_libwallet2_api_c");
+    println!("cargo:rustc-link-lib=dylib=monero_wallet2_api_c");
 
     let bindings = bindgen::Builder::default()
         .header(header_path.to_str().unwrap())

@@ -1,5 +1,5 @@
 use monero_c_rust::{
-    NetworkType, WalletConfig, WalletError, WalletManager, WalletResult, WalletStatus_Ok,
+    NetworkType, WalletConfig, WalletError, WalletManager, WalletResult,
 };
 use std::fs;
 use std::sync::Arc;
@@ -321,7 +321,7 @@ fn test_open_wallet_invalid_path() {
     let result = manager.open_wallet("/invalid/path/to/wallet", "password", NetworkType::Mainnet);
     match result {
         Err(WalletError::WalletErrorCode(status, msg)) => {
-            assert_ne!(status, WalletStatus_Ok);
+            assert_ne!(status, 0);
             assert!(
                 msg.contains("file not found") || msg.contains("openWallet"),
                 "Unexpected error: {}",
