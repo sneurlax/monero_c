@@ -1,0 +1,95 @@
+From c8be0ef787060efcba6067729ae08b422bdde235 Mon Sep 17 00:00:00 2001
+From: Czarek Nakamoto <cyjan@mrcyjanek.net>
+Date: Tue, 18 Feb 2025 14:27:36 +0100
+Subject: [PATCH 7/7] relax mutex in invoke call
+
+---
+ src/gui/qt-daemon/layout       |  2 +-
+ src/wallet/wallets_manager.cpp | 37 ++++++++++++++++++++++++++++++----
+ 2 files changed, 34 insertions(+), 5 deletions(-)
+
+diff --git a/src/gui/qt-daemon/layout b/src/gui/qt-daemon/layout
+index 7f7128e8..8ec45f89 160000
+--- a/src/gui/qt-daemon/layout
++++ b/src/gui/qt-daemon/layout
+@@ -1 +1 @@
+-Subproject commit 7f7128e8c3d5c04d801a327a7228abcc9aba85cd
++Subproject commit 8ec45f89802358be95c7fbb0eec5abe4382bd28e
+diff --git a/src/wallet/wallets_manager.cpp b/src/wallet/wallets_manager.cpp
+index 0152e3d4..490ae0e8 100644
+--- a/src/wallet/wallets_manager.cpp
++++ b/src/wallet/wallets_manager.cpp
+@@ -1698,10 +1698,27 @@ std::string wallets_manager::get_wallet_status(uint64_t wallet_id)
+   return epee::serialization::store_t_to_json(wsi);
+ }
+ 
++struct json_just_method
++{
++  std::string method;
++  BEGIN_KV_SERIALIZE_MAP()
++    KV_SERIALIZE(method)
++  END_KV_SERIALIZE_MAP()
++};
++
+ std::string wallets_manager::invoke(uint64_t wallet_id, std::string params)
+ {
+   GET_WALLET_OPT_BY_ID(wallet_id, wo);
+ 
++  json_just_method req = {};
++  if (!epee::serialization::load_t_from_json(req, params))
++  {
++    epee::json_rpc::response<epee::json_rpc::dummy_result, epee::json_rpc::error> error_response = AUTO_VAL_INIT(error_response);
++    error_response.error.code = -1;
++    error_response.error.message = API_RETURN_CODE_BAD_JSON;
++    return epee::serialization::store_t_to_json(error_response);
++  }
++
+   CRITICAL_REGION_LOCAL1(wo.long_refresh_in_progress_lock);
+   if (wo.long_refresh_in_progress)
+   {
+@@ -1711,16 +1728,28 @@ std::string wallets_manager::invoke(uint64_t wallet_id, std::string params)
+     return epee::serialization::store_t_to_json(error_response);
+   }
+ 
+-
+-  auto locker_object = wo.w.lock();
+-
+   epee::net_utils::http::http_request_info query_info = AUTO_VAL_INIT(query_info);
+   epee::net_utils::http::http_response_info response_info = AUTO_VAL_INIT(response_info);
+   epee::net_utils::connection_context_base stub_conn_context = AUTO_VAL_INIT(stub_conn_context);
+   bool call_found = false;
+   query_info.m_URI = "/json_rpc";
+   query_info.m_body = params;
+-  wo.rpc_wrapper->handle_http_request_map(query_info, response_info, stub_conn_context, call_found);
++
++  if (req.method != "assets_whitelist_get" &&
++      req.method != "decrypt_data" &&
++      req.method != "encrypt_data" &&
++      req.method != "get_restore_info" &&
++      req.method != "get_seed_phrase_info" &&
++      req.method != "get_wallet_info" &&
++      req.method != "getaddress" &&
++      req.method != "getbalance" &&
++      req.method != "sign_message") {
++    auto locker_object = wo.w.lock();
++    wo.rpc_wrapper->handle_http_request_map(query_info, response_info, stub_conn_context, call_found);
++  } else {
++    wo.rpc_wrapper->handle_http_request_map(query_info, response_info, stub_conn_context, call_found);
++  }
++
+   return response_info.m_body;
+ }
+
+diff --git a/src/common/error_codes.h b/src/common/error_codes.h
+index b538fa87..7471b2d1 100644
+--- a/src/common/error_codes.h
++++ b/src/common/error_codes.h
+@@ -48,3 +48,4 @@
+ #define API_RETURN_CODE_MISSING_ZC_INPUTS                       "MISSING_ZC_INPUTS"
+ #define API_RETURN_CODE_ARG_OUT_OF_LIMITS                       "ARG_OUT_OF_LIMITS"
+ #define API_RETURN_CODE_TX_HAS_TOO_MANY_OUTPUTS                 "TX_HAS_TOO_MANY_OUTPUTS"
++#define API_RETURN_CODE_BAD_JSON                                "BAD_JSON" 
+
+-- 
+2.51.0
+
